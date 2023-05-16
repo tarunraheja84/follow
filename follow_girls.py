@@ -1,84 +1,98 @@
-import argparse
-import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+import pyautogui
+import time
 
-def follow_female_followers(username, password, url):
-    # Initialize Chrome webdriver
-    driver = webdriver.Chrome(ChromeDriverManager().install())
+# Set username and password
+username = ""
+password = "abc@abc"
 
-    # Navigate to the Instagram login page
-    driver.get("https://www.instagram.com/accounts/login/")
+# Initialize Chrome webdriver
+driver = webdriver.Chrome(ChromeDriverManager().install())
 
-    # Wait for the page to load
-    time.sleep(3)
+# Navigate to the Instagram login page
+url = "https://www.instagram.com/accounts/login/"
+driver.get(url)
 
-    # Fill in the login details and submit the form
+# Wait for the page to load
+time.sleep(3)
+
+# Fill in the login details and submit the form
+try:
+    username_field = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, 'username')))
+    password_field = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, 'password')))
+    login_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//button[@type="submit"]')))
+    username_field.send_keys(username)
+    password_field.send_keys(password)
+    login_button.click()
+except:
+    print("Could not login to Instagram")
+
+# Wait for the login process to complete
+time.sleep(5)
+
+# Navigate to the Instagram profile URL
+url = "https://www.instagram.com/connectatpiet/followers"
+driver.get(url)
+
+# Wait for the page to load
+time.sleep(3)
+
+# Scroll down the followers list to load more followers
+
+
+prev_span_tags=[]
+while True:
+    span_tags = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'span.x1lliihq.x1plvlek.xryxfnj.x1n2onr6.x193iq5w.xeuugli.x1fj9vlw.x13faqbe.x1vvkbs.x1s928wv.xhkezso.x1gmr53x.x1cpjm7i.x1fgarty.x1943h6x.x1i0vuye.xvs91rp.xo1l8bm.x1roi4f4.x10wh9bi.x1wdrske.x8viiok.x18hxmgj > span.x1lliihq.x193iq5w.x6ikm8r.x10wlt62.xlyipyv.xuxw1ft')))
+    followers_button = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, '//button[@type="button" and contains(@class,"_acan") and contains(@class,"_acap") and contains(@class,"_acas") and contains(@class,"_aj1-")]')))
+    
+    followers=[]
+    for tag in span_tags:
+         if tag not in prev_span_tags:
+            followers.append(tag)
+    
+
+    prev_span_tags=followers
+
+
+   # Get the screen size
+    screen_width, screen_height = pyautogui.size()
+
+    # Move the mouse to the center of the screen
+    pyautogui.moveTo(screen_width / 2, screen_height / 2)
+
+
+    # Scroll downwards
+    pyautogui.scroll(-1500)  # The negative sign indicates scrolling downwards
+    time.sleep(2)
+
+    # Define a list of suffixes that indicate a female name
+    female_suffixes = ['a', 'i', 'A', 'I']
+
     try:
-        username_field = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, 'username')))
-        password_field = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, 'password')))
-        login_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//button[@type="submit"]')))
-        username_field.send_keys(username)
-        password_field.send_keys(password)
-        login_button.click()
+        for i, follower in enumerate(followers):
+            first_name = follower.text.split()[0]
+            for suffix in female_suffixes:
+                if first_name.endswith(suffix):
+                    followers_button[i+1].click()
+                    print(first_name)
+                    break
     except:
-        print("Could not login to Instagram")
-
-    # Wait for the login process to complete
-    time.sleep(5)
-
-    # Navigate to the Instagram profile URL
-    driver.execute_script("window.open('{}','_self',scrollbars=1);".format(url))
-
-    # Wait for the page to load
-    time.sleep(5)
-
-    # Click the followers button to view the list of followers
-    followers_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//a[@href="/{}/followers/"]'.format(username))))
-    followers_button.click()
-
-    # Wait for the list of followers to load
-    time.sleep(5)
-
-    # Scroll down the followers list to load more followers
-    followers_list = driver.find_element_by_xpath('//div[@role="dialog"]//ul')
-    last_height = driver.execute_script("return arguments[0].scrollHeight", followers_list)
-    while True:
-        driver.execute_script("arguments[0].scrollTo(0, arguments[0].scrollHeight);", followers_list)
+        pyautogui.scroll(-1500)  # The negative sign indicates scrolling downwards
         time.sleep(2)
-        new_height = driver.execute_script("return arguments[0].scrollHeight", followers_list)
-        if new_height == last_height:
-            break
-        last_height = new_height
-
-    # Get all the follower buttons on the page
-    follower_buttons = driver.find_elements_by_xpath('//button[contains(text(),"Follow")]')
-
-    # Click all the follower buttons that belong to female followers
-    for button in follower_buttons:
-        follower_name = button.find_element_by_xpath('..//..//div[2]/div[1]').text
-        first_name = follower_name.split()[0]
-        female_suffixes = ['a', 'aa', 'i', 'ka', 'mi', 'ta']
-        for suffix in female_suffixes:
-            if first_name.endswith(suffix):
-                button.click()
-                time.sleep(1)
-                break
-
-    # Close the followers list and the browser
-    close_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[@role="dialog"]//button')))
-    close_button.click()
-    time.sleep(1)
-    driver.quit()
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Follow followers script')
-    parser.add_argument('username', help='Your username')
-    parser.add_argument('password', help='Your password')
-    parser.add_argument('url', help='The URL of the page to follow its followers')
-    args = parser.parse_args()
-    follow_female_followers(args.username, args.password, args.url)
+    while(prev_span_tags==followers):
+        followers = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'span.x1lliihq.x1plvlek.xryxfnj.x1n2onr6.x193iq5w.xeuugli.x1fj9vlw.x13faqbe.x1vvkbs.x1s928wv.xhkezso.x1gmr53x.x1cpjm7i.x1fgarty.x1943h6x.x1i0vuye.xvs91rp.xo1l8bm.x1roi4f4.x10wh9bi.x1wdrske.x8viiok.x18hxmgj > span.x1lliihq.x193iq5w.x6ikm8r.x10wlt62.xlyipyv.xuxw1ft')))
+        pyautogui.scroll(-1500)  # The negative sign indicates scrolling downwards
+        time.sleep(2)
+        print(prev_span_tags==followers)
+    
+
+
+
+
