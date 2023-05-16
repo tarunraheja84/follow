@@ -71,10 +71,14 @@ while True:
 
     prev_span_tags=followers
     curr_size=len(st)
+
+    # ending the program
     if(curr_size==prev_size and curr_size>0):
         print(f"{curr_size} followers scanned.")
         driver.quit()
         driver.close()
+
+
     prev_size=curr_size
    # Get the screen size
     screen_width, screen_height = pyautogui.size()
